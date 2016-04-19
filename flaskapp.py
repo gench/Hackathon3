@@ -4,7 +4,8 @@ Simple api to serve predictions.
 from flask import Flask
 from flask_restful import reqparse, abort, Api, Resource
 import json
-import numpy
+import numpy as np
+import pandas as pd
 
 app = Flask(__name__)
 api = Api(app)
@@ -80,7 +81,7 @@ class SimpleModel(Resource):
                 linear += 0 * d.get("", 0)
                 linear += 0 * d.get("", 0)
                 linear += 0 * d.get("", 0)
-		return 1./(1 + numpy.exp(OFFSET-linear/SIGMA))
+		return 1./(1 + np.exp(OFFSET-linear/SIGMA))
 
 api.add_resource(SimpleModel, '/predict')
 
