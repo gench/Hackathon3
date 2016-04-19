@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-def data_tranformer(df):
+def data_transformer(df):
 
     df.drop('sample_uuid',axis=1,inplace=True)
 
