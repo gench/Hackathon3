@@ -4,6 +4,7 @@ import numpy as np
 def data_transformer(df):
 
     dfout = df.drop('sample_uuid',axis=1,inplace=False)
+    dfout.drop('duration', axis=1, inplace=True)
 
     yes_no = {'yes': True, 'no': False}
     dfout['housing'] = dfout['housing'].map(yes_no)
