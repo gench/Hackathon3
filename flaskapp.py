@@ -1,7 +1,7 @@
 """
 Simple api to serve predictions.
 """
-from flask import Flask
+from flask import Flask, jsonify
 from flask_restful import reqparse, abort, Api, Resource
 import json
 import numpy as np
@@ -58,8 +58,9 @@ class SimpleModel(Resource):
 		dft = data_transformer.data_transformer(df)
 		uuid = d.get("sample_uuid", "no uuid")
 		prob = self.clf.predict_proba(dft)[0][1]
-		labl = 1 if self.clf.predict(dft)[0] else 0
-		return json.dumps({"sample_uuid":uuid, "probability":prob, "label":labl})
+		labl = 1. if self.clf.predict(dft)[0] else 0.
+		return jsonify(sample_uuid=uuid, probability=prob, label=labl)
+		#return json.dumps({"sample_uuid":uuid, "probability":prob, "label":labl})
 
 
 api.add_resource(SimpleModel, '/api/v1/predict')
