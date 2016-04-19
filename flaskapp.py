@@ -6,6 +6,8 @@ from flask_restful import reqparse, abort, Api, Resource
 import json
 import numpy as np
 import pandas as pd
+import data_transformer
+from sklearn.externals import joblib
 
 app = Flask(__name__)
 api = Api(app)
@@ -28,62 +30,39 @@ class SimpleModel(Resource):
 		self.sigma  = SIGMA
 		self.parser = reqparse.RequestParser()
 		self.parser.add_argument('sample_uuid', required=True)
-		self.parser.add_argument('age', type=int)
-		self.parser.add_argument('month')
-		self.parser.add_argument('day_of_week')
-		self.parser.add_argument('duration', type=int)
-		self.parser.add_argument('campaign', type=int)
-		self.parser.add_argument('pdays', type=int)
-		self.parser.add_argument('job')
-		self.parser.add_argument('marital') 
-                self.parser.add_argument('education')
-                self.parser.add_argument('default')
-                self.parser.add_argument('housing')
-                self.parser.add_argument('loan')
-                self.parser.add_argument('contact')
-                self.parser.add_argument('previous')
-                self.parser.add_argument('poutcome')
-                self.parser.add_argument('emp.var.rate', type=float)
-                self.parser.add_argument('cons.price.idx', type=float)
-                self.parser.add_argument('cons.conf.idx', type=float)
-                self.parser.add_argument('euribor3m', type=float)
-                self.parser.add_argument('nr.employed', type=float)
-
-	def _get(self, js):
-		"""Not used. For with json as input"""
-		d = json.loads(js)
-		uuid = d["sample_uuid"]
-		prob = self.logistic(d)
-		labl = 1 if prob>0.5 else 0
-		return json.dumps({"sample_uuid":uuid, "probability":prob, "label":labl})
+		self.parser.add_argument('age', type=int, default=0)
+		self.parser.add_argument('month', default='jan')
+		self.parser.add_argument('day_of_week', default='mon')
+		self.parser.add_argument('duration', type=int, default=0)
+		self.parser.add_argument('campaign', type=int, default=0)
+		self.parser.add_argument('pdays', type=int, default=0)
+		self.parser.add_argument('job', default='unknown')
+		self.parser.add_argument('marital', default='unknown') 
+                self.parser.add_argument('education', default='unknown')
+                self.parser.add_argument('default', default='unknown')
+                self.parser.add_argument('housing', default='yes')
+                self.parser.add_argument('loan', default='yes')
+                self.parser.add_argument('contact', default='cellular')
+                self.parser.add_argument('previous', type=int, default=-1)
+                self.parser.add_argument('poutcome', default='nonexistent')
+                self.parser.add_argument('emp.var.rate', type=float, default=0)
+                self.parser.add_argument('cons.price.idx', type=float, default=0)
+                self.parser.add_argument('cons.conf.idx', type=float, default=0)
+                self.parser.add_argument('euribor3m', type=float, default=0)
+                self.parser.add_argument('nr.employed', type=float, default=0)
+		self.clf = joblib.load('RF_Classifier.pkl')
 
 	def get(self):
 		d = self.parser.parse_args()
+		df = pd.DataFrame(d, index=[0])
+		dft = data_transformer.data_transformer(df)
 		uuid = d.get("sample_uuid", "no uuid")
-		prob = self.logistic(d)
-		labl = 1 if prob>0.5 else 0
+		prob = self.clf.predict_proba(dft)[0][1]
+		labl = 1 if self.clf.predict(dft)[0] else 0
 		return json.dumps({"sample_uuid":uuid, "probability":prob, "label":labl})
 
-	def logistic(self, d):
-		linear  = 0
-		linear += 0 * d.get("age", 0)
-		linear += 0 * month.get(d.get("month","none"), 0)
-                linear += 0 * dow.get(d.get("day_of_week","none"), 0)
-                linear += 0 * boolean.get(d.get("housing", "none"), 0)
-                linear += 0 * boolean.get(d.get("loan", "none"), 0)
-                #linear += 0 * d.get("emp.var.rate", 0.)
-                #linear += 0 * d.get("cons.price.idx", 0.)
-                #linear += 0 * d.get("cons.conf.idx", 0.)
-                #linear += 0 * d.get("euribor3m", 0.)
-                #linear += 0 * d.get("nr.employed", 0.)
-                #linear += 0 * d.get("campaign", 0)
-                linear += 0 * d.get("", 0)
-                linear += 0 * d.get("", 0)
-                linear += 0 * d.get("", 0)
-                linear += 0 * d.get("", 0)
-		return 1./(1 + np.exp(OFFSET-linear/SIGMA))
 
-api.add_resource(SimpleModel, '/predict')
+api.add_resource(SimpleModel, '/api/v1/predict')
 
 if __name__ == '__main__':
      app.run(host="0.0.0.0",port=5000, debug=True)
